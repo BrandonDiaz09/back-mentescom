@@ -76,3 +76,50 @@ class TestResultCreateView(APIView):
             return Response({"detail": "Test enviado exitosamente.", "total_score": total_score}, status=201)
         except Exception as e:
             return Response({"detail": str(e)}, status=400)
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .models import Test, AssignedTest
+from users.models import User  # Importa el modelo de usuario
+from rest_framework import status
+from .serializers import AssignedTestSerializer
+
+class AssignTestView(APIView):
+    """
+    Vista para asignar un test a un estudiante.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        student_id = request.data.get("student_id")
+        test_id = request.data.get("test_id")
+
+        # Validación de datos
+        if not student_id or not test_id:
+            return Response({"detail": "student_id y test_id son requeridos."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Verificar si el usuario y el test existen
+            student = User.objects.get(id=student_id)
+            test = Test.objects.get(id=test_id)
+
+            # Verificar si el test ya fue asignado al estudiante
+            if AssignedTest.objects.filter(student=student, test=test).exists():
+                return Response({"detail": "El test ya está asignado a este estudiante."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Crear la asignación del test
+            assigned_test = AssignedTest.objects.create(
+                test=test,
+                student=student,
+                assigned_by=request.user  # La psicóloga autenticada asigna el test
+            )
+
+            serializer = AssignedTestSerializer(assigned_test)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except User.DoesNotExist:
+            return Response({"detail": "Estudiante no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except Test.DoesNotExist:
+            return Response({"detail": "Test no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
