@@ -53,7 +53,7 @@ class TestResult(models.Model):
     submitted_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Result for {self.test.name} by {self.student.email}"
+        return f"Result for {self.test.name}:{self.test.pk} by {self.student.email}:{self.student.pk}"
 
 class Answer(models.Model):
     test_result = models.ForeignKey(TestResult, on_delete=models.CASCADE, related_name='answers')

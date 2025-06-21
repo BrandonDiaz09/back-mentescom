@@ -123,3 +123,40 @@ class AssignTestView(APIView):
             return Response({"detail": "Test no encontrado."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .models import TestResult, Answer
+from .serializers import AnswerSerializer
+from rest_framework import status
+
+class TestResultsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, student_id, test_id):  # Ahora recibimos student_id y test_id de la URL
+        try:
+            # Buscar los resultados del test y validar si existen
+            print(TestResult.objects.all())
+            test_results = TestResult.objects.get(test_id=test_id, student_id=student_id)
+            answers = Answer.objects.filter(test_result=test_results).select_related('question', 'selected_option')
+
+            # Formatear la respuesta
+            data = {
+                "total_score": test_results.total_score,
+                "submitted_at": test_results.submitted_at,
+                "answers": [
+                    {
+                        "question": answer.question.text,
+                        "selected_option": answer.selected_option.text,
+                        "value": answer.value
+                    }
+                    for answer in answers
+                ]
+            }
+            return Response(data, status=200)
+
+        except TestResult.DoesNotExist:
+            return Response({"detail": "Resultados no encontrados."}, status=404)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=500)  

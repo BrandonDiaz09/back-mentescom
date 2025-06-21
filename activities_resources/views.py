@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils.timezone import now
 
 class ActivityListView(ListAPIView):
-    permission_classes = [IsAuthenticated]
+    #permission_classes = [IsAuthenticated]
     queryset = Activity.objects.all()
     serializer_class = ActivityListSerializer
 
